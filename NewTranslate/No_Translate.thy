@@ -12,11 +12,13 @@ syntax
   "_rel" :: "(('a*'a) \<Rightarrow> bool) \<Rightarrow> 'a rel" ("\<lpred>_\<rpred>" [0] 1000)
   "_set" :: "('a \<Rightarrow> bool) \<Rightarrow> 'a set" ("\<lrel>_\<rrel>" [0] 1000)
   "_comp" :: "[('b * 'c) set, ('a * 'b) set] \<Rightarrow> ('a * 'c) set" (infixr "\<Zsemi>" 75)
+  "_dunno" :: "'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set" ("_\<lparr>_\<rparr>" [0] 1000)
 
 translations
-  "\<lpred> p \<rpred>" \<rightharpoonup> "CONST Collect(_quote p)"
+  "\<lpred> r \<rpred>" \<rightharpoonup> "CONST Collect(_quote r)"
   "\<lrel> p \<rrel>" \<rightharpoonup> "CONST Collect(_quote p)"
   "r \<Zsemi> s" \<rightharpoonup> "r O s"
+  "r\<lparr>p\<rparr>" \<rightharpoonup> "{s'. \<exists>s\<in>p. (s, s')\<in>r}"
 
 lemma strengthen_pre: "(\<lpred>p1\<rpred> \<subseteq> \<lpred>p2\<rpred>) \<equiv> p1 \<Longrightarrow> p2"
   by blast
@@ -28,10 +30,14 @@ lemma range_restrict: "(\<lpred>q2\<rpred> \<triangleright> \<lrel>p\<rrel> \<su
   by (smt (verit, ccfv_threshold) Collect_empty_eq IntI case_prodE case_prodI inf_le2 mem_Collect_eq range_restrict_remove restrict_range_def subsetD)
 
 
- 
-  
 
-lemma id_rel: "Id \<equiv> \<lpred>x = x'\<rpred>"
-  by sledgehammer
+
+
+
+record vars =
+  x :: nat
+
+lemma id_rel: "\<lpred>s x = s' x\<rpred> \<equiv> (Id :: vars rel)"
+  sorry
 
 end
