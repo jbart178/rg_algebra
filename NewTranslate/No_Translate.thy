@@ -31,26 +31,34 @@ definition predset :: "('a \<Rightarrow> bool) \<Rightarrow> 'a set" ("\<lrel>_\
 definition dunno :: "('a*'a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> 'a set" ("_\<bar>_\<bar>" [30,30])
   where "dunno r p \<equiv> {s'. (\<exists> s. p s \<and> r (s,s'))}"
 
-lemma strengthen_pre: "(\<lrel>p1\<rrel> \<subseteq> \<lrel>p2\<rrel>) \<Longrightarrow> (\<And>s. p1 s \<Longrightarrow> p2 s)"
+lemma rel_eq: "(\<lpred>q1\<rpred> \<subseteq> \<lpred>q2\<rpred>) = (\<forall> s. q1 s \<longrightarrow> q2 s)"
+proof -
+  have "\<lpred>q1\<rpred> \<subseteq> \<lpred>q2\<rpred> \<Longrightarrow> (\<And> x. q1 x \<Longrightarrow> q2 x)" by sledgehammer
+  also have "(\<And> x. q1 x \<Longrightarrow> q2 x) \<Longrightarrow> \<lpred>q1\<rpred> \<subseteq> \<lpred>q2\<rpred>" by sledgehammer
+  thus ?thesis
+
+lemma strengthen_pre1: "(\<lrel>p1\<rrel> \<subseteq> \<lrel>p2\<rrel>) \<Longrightarrow> (\<And>s. p1 s \<Longrightarrow> p2 s)"
   by (simp add: Collect_mono_iff predset_def)
 
-lemma dom_restrict: "(\<lrel>p\<rrel> \<triangleleft> \<lpred>q2\<rpred> \<subseteq> \<lpred>q1\<rpred>) \<Longrightarrow> (\<And>s. p (fst s) \<and> q2 s \<Longrightarrow> q1 s)"
+lemma strengthen_pre2: "(\<And>s. p1 s \<Longrightarrow> p2 s) \<Longrightarrow> (\<lrel>p1\<rrel> \<subseteq> \<lrel>p2\<rrel>)"
+  by (simp add: Collect_mono_iff predset_def)
+
+lemma dom_restrict1: "(\<lrel>p\<rrel> \<triangleleft> \<lpred>q2\<rpred> \<subseteq> \<lpred>q1\<rpred>) \<Longrightarrow> (\<And>s. p (fst s) \<and> q2 s \<Longrightarrow> q1 s)"
   by (smt (verit) Int_def UNIV_def in_mono mem_Collect_eq predset_def prod.collapse relation_def restrict_domain_def split_conv)
 
-lemma range_restrict: "(\<lpred>q2\<rpred> \<triangleright> \<lrel>p\<rrel> \<subseteq> \<lpred>q1\<rpred>) \<Longrightarrow> (\<And>s. p (snd s) \<and> q2 s \<Longrightarrow> q1 s)"
+lemma dom_restrict2: "(\<And>s. p (fst s) \<and> q2 s \<Longrightarrow> q1 s) \<Longrightarrow> (\<lrel>p\<rrel> \<triangleleft> \<lpred>q2\<rpred> \<subseteq> \<lpred>q1\<rpred>)"
+  sorry
+
+lemma range_restrict1: "(\<lpred>q2\<rpred> \<triangleright> \<lrel>p\<rrel> \<subseteq> \<lpred>q1\<rpred>) \<Longrightarrow> (\<And>s. p (snd s) \<and> q2 s \<Longrightarrow> q1 s)"
   by (smt (verit, del_insts) IntI in_mono mem_Collect_eq predset_def prod.collapse relation_def restrict_range_def split_def top_greatest)
+
+
 
 lemma "(Range (\<lrel>p\<rrel> \<triangleleft> \<lpred>r\<rpred>)) \<subseteq> (r\<bar>p\<bar>)"
   by (smt (verit, best) IntE RangeE dunno_def mem_Collect_eq predset_def relation_def restrict_domain_def split_conv subsetI)
 
 lemma "(r\<bar>p\<bar>) \<subseteq> (Range (\<lrel>p\<rrel> \<triangleleft> \<lpred>r\<rpred>))"
   by (smt (verit, ccfv_threshold) Int_iff Int_iff Range.intros Range.intros Range_mono UNIV_def case_prodE case_prod_conv case_prod_unfold domain_restrict_remove dunno_def in_mono inf.orderE mem_Collect_eq mem_Collect_eq mem_Collect_eq predset_def prod.collapse prod.collapse prod.inject prod.inject relation_def restrict_domain_def subsetD subsetI)
-
-
-
-record 'a vars =
-  x :: nat
-  \<dots> :: 'a
 
 (*
 definition id_rel :: "('a*'a) \<Rightarrow> bool" where
@@ -95,10 +103,14 @@ lemma
   by (metis Collect_mono assert_iso assms predset_def)
 
 lemma 
+  assumes "\<And>x. q2 x \<Longrightarrow> q1 x"
+  shows "c;\<lparr>\<lpred>q1\<rpred>\<rparr> \<ge> c;\<lparr>\<lpred>q2\<rpred>\<rparr>"
+  by sledgehammer
+
+lemma 
   assumes "\<And>s s'. (p s \<and> q2 (s, s')) \<Longrightarrow> q1 (s, s')"
   shows "\<lbrace>\<lrel>p\<rrel>\<rbrace>;\<lparr>\<lpred>q1\<rpred>\<rparr> \<ge> \<lbrace>\<lrel>p\<rrel>\<rbrace>;\<lparr>\<lpred>q2\<rpred>\<rparr>"
-proof - 
-  have "\<And>s s'. (p s \<and> q2 (s, s')) \<Longrightarrow> (p \<triangleleft> q1)" by sledgehammer
+  by sledgehammer
 
 
 
