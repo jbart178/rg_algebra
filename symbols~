@@ -7,5 +7,5 @@
 \<rpred>              code: 0x00231d                   font: DejaVuSans
 \<lrel>               code: 0x00231e                   font: DejaVuSans
 \<rrel>               code: 0x00231f                   font: DejaVuSans
-\<cuvee>⋎               code: 0x0022CE group: operator
-\<cuwed>⋏               code: 0x0022CF group: operator
+⋎               code: 0x0022CE group: operator
+⋏               code: 0x0022CF group: operator

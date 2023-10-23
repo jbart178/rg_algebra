@@ -3,16 +3,32 @@ theory Predicates
     "Main"
     "../General/Relations"
     "../Programming/State_Relations"
+    "../Programming/Expressions"
 begin
 
 text \<open>We use (\<lpred>p\<rpred>) to give a relation where (\<sigma>,\<sigma>') satisfy predicate p\<close>
 
 
-definition relation :: "(('a*'a) \<Rightarrow> bool) \<Rightarrow> 'a rel" ("\<lpred>_\<rpred>" [30])
-  where "relation r \<equiv> {(s, s') \<in> UNIV. r (s, s')} "
+definition relation :: "(('state*'state) \<Rightarrow> bool) \<Rightarrow> 'state rel" ("\<lpred>_\<rpred>" [30])
+  where "relation r \<equiv> Collect(r)"
 
-definition predset :: "('a \<Rightarrow> bool) \<Rightarrow> 'a set" ("\<lrel>_\<rrel>" [30])
-  where "predset p = Collect(p)"
+definition predset :: "('state \<Rightarrow> bool) \<Rightarrow> 'state set" ("\<lrel>_\<rrel>" [30])
+  where "predset p \<equiv> Collect(p)"
+
+definition relseq :: "(('state*'state) \<Rightarrow> bool) \<Rightarrow> (('state*'state) \<Rightarrow> bool) \<Rightarrow> (('state*'state) \<Rightarrow> bool)" (infixr "\<Zcomp>" 30)
+  where "relseq q r \<equiv> \<lambda> (s, s''). (\<exists>s'. q (s, s') \<and> r (s', s''))"
+
+definition lambda_and :: "('a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> bool)" (infixr "|\<and>|" 30)
+  where "lambda_and p q \<equiv> (\<lambda>s. p s \<and> q s)"
+
+definition lambda_or :: "('a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> bool)" (infixr "|\<or>|" 30) 
+  where "lambda_or p q \<equiv> (\<lambda>s. p s \<or> q s)"
+
+definition lambda_and_big :: "('a \<Rightarrow> bool) set \<Rightarrow> ('a \<Rightarrow> bool)" ("|\<And>|_" 30)
+  where "lambda_and_big ps \<equiv> (\<lambda>s. (\<forall>p\<in>ps. p s))"
+
+definition lambda_or_big :: "('a \<Rightarrow> bool) set \<Rightarrow> ('a \<Rightarrow> bool)" ("|\<Or>|_" 30)
+  where "lambda_or_big ps \<equiv> (\<lambda>s. (\<exists>p\<in>ps. p s))"
 
 context state_relations
 begin
@@ -21,6 +37,9 @@ definition id_rel :: "('state*'state) \<Rightarrow> bool" where
 
 definition id_rel_bar :: "'varname fset \<Rightarrow> ('state*'state) \<Rightarrow> bool" where
 "id_rel_bar xs s \<equiv> \<forall>x :: 'varname. x|\<notin>|xs \<longrightarrow> ((get_var x (fst s)) = (get_var x (snd s)))"
+
+definition id_bar_sing :: "'varname \<Rightarrow> ('state*'state) \<Rightarrow> bool" ("id\<^sub>__" [30, 30]) where
+"id_bar_sing x s \<equiv> id_rel_bar {|x|} s"
 
 lemma "\<lpred>id_rel\<rpred> \<subseteq> id_bar xs"
   by (smt (verit, ccfv_SIG) fst_conv id_rel_def mem_Collect_eq relation_def snd_conv split_conv state_relations.id_bar_def state_relations_axioms subrelI)
@@ -31,8 +50,6 @@ lemma "\<lpred>id_rel\<rpred> = id_bar fempty"
 lemma "\<lpred>id_rel_bar xs\<rpred> = id_bar xs"
   by (smt (verit, del_insts) Collect_cong UNIV_I case_prod_unfold fst_conv id_bar_def id_rel_bar_def relation_def snd_conv)
 end
-
-
 
 
 lemma rel_eq: "(\<lpred>q1\<rpred> \<subseteq> \<lpred>q2\<rpred>) = (\<forall> s. q1 s \<longrightarrow> q2 s)"
@@ -54,4 +71,8 @@ lemma range_restrict: "(\<lpred>q2\<rpred> \<triangleright> \<lrel>p\<rrel> \<su
 
 lemma "(Range (\<lrel>p\<rrel> \<triangleleft> \<lpred>r\<rpred>)) \<subseteq> (\<lpred>r\<rpred> `` \<lrel>p\<rrel>)"
   using restrict_domain_def by fastforce
+
+lemma relseqeq: "\<lpred>q \<Zcomp> r\<rpred> = \<lpred>q\<rpred> O \<lpred>r\<rpred>"
+  sorry
+
 end
