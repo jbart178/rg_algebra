@@ -5,6 +5,12 @@ theory The_Laws
     "../Programming/AtomicSpecification"
 begin
 
+syntax 
+"_assign" :: "idt \<Rightarrow> 'b \<Rightarrow> 'a" ("(\<Zprime>_ |:=| _)" [70, 65] 61)
+
+translations
+"\<Zprime>x |:=| a" \<rightharpoonup> "\<guillemotleft>\<Zprime>(_update_name x (\<lambda>_. a))\<guillemotright>"
+
 
 text \<open>Below are some results around program refinement\<close>
 
@@ -166,8 +172,9 @@ fun change_com :: "'a com \<Rightarrow> 'a" where
   "change_com (Await b c) = idle"
 *)
 
-definition assign_hoare :: "'k \<Rightarrow> ('b, 'v) expr \<Rightarrow> 'a" (infix ":=" 93)
-  where "(y := e) \<equiv> \<Squnion>k. (\<lbrakk>e\<rbrakk>k ; opt(\<lpred>id\<^sub>x\<rpred> \<triangleright> \<llangle>\<acute>(_update_name x (\<lambda>_. a))\<rrangle>) ; idle)"
+
+lemma assign_hoare: "(y ::= e) \<equiv> \<Squnion>k. (\<lbrakk>e\<rbrakk>k ; opt(\<lpred>id\<^sub>x\<rpred> \<triangleright> Collect (\<Zprime>x |:=| (eval e s))) ; idle)"
+  by sledgehammer
 
 lemma local_ass:
   assumes single_reference_e: "single_reference e \<lpred>r\<rpred>"

@@ -21,6 +21,7 @@ parse_translation \<open>
   in [(\<^syntax_const>\<open>_quote\<close>, K quote_tr)] end
 \<close>
 
+(*
 text \<open>More code from RG_Syntax\<close>
 syntax
   "_before" :: "id \<Rightarrow> 'a" ("\<ordmasculine>_")
@@ -30,7 +31,7 @@ translations
   "\<ordmasculine>x" \<rightleftharpoons> "x \<Zprime>CONST fst"
   "\<ordfeminine>x" \<rightleftharpoons> "x \<Zprime>CONST snd"
 value "Id_on"
-
+*)
 
 text \<open>We use (\<lpred>p\<rpred>) to give a relation where (\<sigma>,\<sigma>') satisfy predicate p\<close>
 
@@ -61,13 +62,14 @@ begin
 definition id_rel :: "('state*'state) \<Rightarrow> bool" where
 "id_rel s \<equiv> \<forall>x. ((get_var x (fst s)) = (get_var x (snd s)))"
 
-
+(*
 (*TODO - Need to make work with RG_Hoare syntax*)
 definition id_rel_bar :: "'varname fset \<Rightarrow> bool" where
-"id_rel_bar xs \<equiv> \<llangle>\<forall>x. x|\<notin>|xs \<longrightarrow> (\<ordfeminine>x = \<ordmasculine>x)\<rrangle>"
+"id_rel_bar xs \<equiv> {|\<forall>x. x|\<notin>|xs \<longrightarrow> \<guillemotleft>\<Zprime>x = \<Zprime>x\<guillemotright> |}"
 
 definition id_bar_sing :: "'varname \<Rightarrow> ('state*'state) \<Rightarrow> bool" ("id\<^sub>__" [30, 30]) where
 "id_bar_sing x s \<equiv> id_rel_bar {|x|} s"
+*)
 
 lemma "\<lpred>id_rel\<rpred> \<subseteq> id_bar xs"
   by (smt (verit, ccfv_SIG) fst_conv id_rel_def mem_Collect_eq relation_def snd_conv split_conv state_relations.id_bar_def state_relations_axioms subrelI)
@@ -76,7 +78,7 @@ lemma "\<lpred>id_rel\<rpred> = id_bar fempty"
   by (smt (verit, ccfv_SIG) Collect_cong UNIV_I ex_fin_conv id_bar_def id_rel_def prod.collapse relation_def split_def)
 
 lemma "\<lpred>id_rel_bar xs\<rpred> = id_bar xs"
-  by (smt (verit, del_insts) Collect_cong UNIV_I case_prod_unfold fst_conv id_bar_def id_rel_bar_def relation_def snd_conv)
+  sorry
 end
 
 
