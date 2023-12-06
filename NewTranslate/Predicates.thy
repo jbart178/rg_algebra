@@ -1,10 +1,36 @@
 theory Predicates
   imports
-    "Main"
     "../General/Relations"
     "../Programming/State_Relations"
     "../Programming/Expressions"
 begin
+
+text \<open>Quote Antiquote code syntax is introduced from Quote_Antiquote theory with notation edit\<close>
+syntax
+  "_quote"     :: "'b \<Rightarrow> ('a \<Rightarrow> 'b)"                ("(\<guillemotleft>_\<guillemotright>)" [0] 1000)
+  "_antiquote" :: "('a \<Rightarrow> 'b) \<Rightarrow> 'b"                ("\<Zprime>_" [1000] 1000)
+  "_Assert"    :: "'a \<Rightarrow> 'a set"                    ("(\<llangle>_\<rrangle>)" [0] 1000)
+
+translations
+  "\<llangle>b\<rrangle>" \<rightharpoonup> "CONST Collect \<guillemotleft>b\<guillemotright>"
+
+parse_translation \<open>
+  let
+    fun quote_tr [t] = Syntax_Trans.quote_tr \<^syntax_const>\<open>_antiquote\<close> t
+      | quote_tr ts = raise TERM ("quote_tr", ts);
+  in [(\<^syntax_const>\<open>_quote\<close>, K quote_tr)] end
+\<close>
+
+text \<open>More code from RG_Syntax\<close>
+syntax
+  "_before" :: "id \<Rightarrow> 'a" ("\<ordmasculine>_")
+  "_after"  :: "id \<Rightarrow> 'a" ("\<ordfeminine>_")
+
+translations
+  "\<ordmasculine>x" \<rightleftharpoons> "x \<Zprime>CONST fst"
+  "\<ordfeminine>x" \<rightleftharpoons> "x \<Zprime>CONST snd"
+value "Id_on"
+
 
 text \<open>We use (\<lpred>p\<rpred>) to give a relation where (\<sigma>,\<sigma>') satisfy predicate p\<close>
 
@@ -35,8 +61,10 @@ begin
 definition id_rel :: "('state*'state) \<Rightarrow> bool" where
 "id_rel s \<equiv> \<forall>x. ((get_var x (fst s)) = (get_var x (snd s)))"
 
-definition id_rel_bar :: "'varname fset \<Rightarrow> ('state*'state) \<Rightarrow> bool" where
-"id_rel_bar xs s \<equiv> \<forall>x :: 'varname. x|\<notin>|xs \<longrightarrow> ((get_var x (fst s)) = (get_var x (snd s)))"
+
+(*TODO - Need to make work with RG_Hoare syntax*)
+definition id_rel_bar :: "'varname fset \<Rightarrow> bool" where
+"id_rel_bar xs \<equiv> \<llangle>\<forall>x. x|\<notin>|xs \<longrightarrow> (\<ordfeminine>x = \<ordmasculine>x)\<rrangle>"
 
 definition id_bar_sing :: "'varname \<Rightarrow> ('state*'state) \<Rightarrow> bool" ("id\<^sub>__" [30, 30]) where
 "id_bar_sing x s \<equiv> id_rel_bar {|x|} s"

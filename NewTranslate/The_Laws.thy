@@ -1,33 +1,15 @@
 theory The_Laws
   imports 
     "./Predicates"
-    "../Programming/IntroPar_Big"
-    "../Programming/State_Relations"
-    "../Programming/Assignments"
+    "../Programming/Programming_Constructs"
+    "../Programming/AtomicSpecification"
 begin
+
 
 text \<open>Below are some results around program refinement\<close>
 
-locale laws = strong_spec + intro_par_big + state_relations + expressions + assignments
+locale laws = programming_constructs_simple + atomic_specification
 begin
-
-lemma relat_ge: "\<lceil>\<lpred>q1\<rpred> \<sqinter> \<lpred>q2\<rpred>\<rceil> \<ge> \<lparr>\<lpred>q1 |\<and>| q2\<rpred>\<rparr>"
- by (metis (mono_tags, opaque_lifting) Int_subset_iff conj.sync_mono conj_chaos lambda_and_def pspec_strengthen rel_eq spec_def term_nonaborting)
-
-lemma relat_le "\<lparr>\<lpred>q1 |\<and>| q2\<rpred>\<rparr> \<ge> \<lceil>\<lpred>q1\<rpred> \<sqinter> \<lpred>q2\<rpred>\<rceil>"
-proof -
-  have "\<lparr>\<lpred>q1 |\<and>| q2\<rpred>\<rparr> = \<lparr>\<lpred>(\<lambda>s. q1 s \<and> q2 s)\<rpred>\<rparr>"
-    by (simp add: lambda_and_def) 
-  have "... = \<lparr>{s. q1 s \<and> q2 s}\<rparr>"
-    by (simp add: relation_def)
-  have "... = \<lparr>{s. q1 s} \<inter> {s. q2 s}\<rparr>"
-    by (simp add: Collect_conj_eq)
-  have "... = \<lparr>\<lpred>q1\<rpred> \<inter> \<lpred>q2\<rpred>\<rparr>"
-    by (simp add: relation_def)
-  have "... = \<lparr>\<lpred>q1\<rpred> \<sqinter> \<lpred>q2\<rpred>\<rparr>"
-    by auto
-  have "... \<ge> \<lceil>\<lpred>q1\<rpred> \<sqinter> \<lpred>q2\<rpred>\<rceil> \<iinter> term" by sledgehammer
-qed
 
 lemma monotonicity:
   assumes "c0 \<ge> c1 \<and> d0 \<ge> d1"
@@ -103,90 +85,131 @@ lemma restrict_frame:
   shows "X:\<^sub>sc \<ge> Y:\<^sub>sc"
   using assms conj.sync_mono_left guar_strengthen id_bar_narrow var_frame_set_def by presburger
 
+lemma conj_to_inter:
+  shows "\<lpred>(q1 |\<and>| q2)\<rpred> = \<lpred>q1\<rpred> \<sqinter> \<lpred>q2\<rpred>"
+  by (simp add: Int_def lambda_and_def relation_def)
+
+lemma conj_to_inter_round:
+  shows "\<lpred>(q1 |\<and>| q2)\<rpred> = \<lpred>q1\<rpred> \<inter> \<lpred>q2\<rpred>"
+  by (meson conj_to_inter)
+
+lemma or_to_union:
+  shows "\<lpred>(q1 |\<or>| q2)\<rpred> = \<lpred>q1\<rpred> \<squnion> \<lpred>q2\<rpred>"
+proof -
+  have 1: "\<lpred>(q1 |\<or>| q2)\<rpred> = {x. q1 x \<or> q2 x}"
+    by (simp add: lambda_or_def relation_def)
+  also have "\<lpred>q1\<rpred> \<squnion> \<lpred>q2\<rpred> = {x. q1 x} \<squnion> {x. q2 x}"
+    by (simp add: relation_def)
+  hence "... = {x. q1 x \<or> q2 x}"
+    by blast
+  thus "?thesis" using 1 by (simp add: relation_def)
+qed
+
+lemma conj_to_inter_big:
+  shows "\<lpred>|\<And>|A\<rpred> = (\<Sqinter>q\<in>A. \<lpred>q\<rpred>)"
+proof -
+  have "\<lpred>|\<And>|A\<rpred> \<subseteq> (\<Sqinter>q\<in>A. \<lpred>q\<rpred>)"
+    by (metis (mono_tags, lifting) INT_greatest lambda_and_big_def rel_eq)
+  also have "(\<Sqinter>q\<in>A. \<lpred>q\<rpred>) \<subseteq> \<lpred>|\<And>|A\<rpred>"
+    by (smt (verit) INT_iff lambda_and_big_def mem_Collect_eq relation_def subsetI)
+  thus "?thesis" using calculation by force
+qed
+
 lemma introduce_para:
   shows "(rely \<lpred>r\<rpred>) \<iinter> \<lparr>\<lpred>(q1 |\<and>| q2)\<rpred>\<rparr> \<ge> 
          ((rely \<lpred>(r |\<or>| r1)\<rpred>) \<iinter> (guar \<lpred>r2\<rpred>) \<iinter> \<lparr>\<lpred>q1\<rpred>\<rparr>)
          \<parallel> ((rely \<lpred>(r |\<or>| r2)\<rpred>) \<iinter> (guar \<lpred>r1\<rpred>) \<iinter> \<lparr>\<lpred>q2\<rpred>\<rparr>)"
 proof - 
-  have "(rely \<lpred>r\<rpred>) \<iinter> \<lparr>\<lpred>(q1 |\<and>| q2)\<rpred>\<rparr> \<ge> (rely \<lpred>r\<rpred>) \<iinter> \<lparr>\<lpred>(q1 |\<and>| q2)\<rpred>\<rparr> \<iinter> term" 
-    using conj_conjoin_non_aborting term_nonaborting by force
-  also have "(rely \<lpred>r\<rpred>) \<iinter> \<lceil>\<lpred>q1\<rpred> \<sqinter> \<lpred>q2\<rpred>\<rceil> \<iinter> term \<ge> (rely \<lpred>r\<rpred>) \<iinter> \<lparr>\<lpred>(q1 |\<and>| q2)\<rpred>\<rparr> \<iinter> term" (is "_ \<ge> ?rhs")
-    using conj.sync_mono_right local.conj_commute relat_eq by presburger
-  also have  \<ge> ((guar \<lpred>r |\<or>| r2\<rpred>) \<iinter> (rely \<lpred>r |\<or>| r1\<rpred>) \<iinter> \<lparr>\<lpred>q1\<rpred>\<rparr> \<parallel> (guar \<lpred>r |\<or>| r1\<rpred>) \<iinter> (rely \<lpred>r |\<or>| r2\<rpred>) \<iinter> \<lparr>\<lpred>q2\<rpred>\<rparr>) \<iinter> term" by sledgehammer
+  have 1: "(rely \<lpred>r\<rpred>) \<iinter> \<lparr>\<lpred>(q1 |\<and>| q2)\<rpred>\<rparr> = (rely \<lpred>r\<rpred>) \<iinter> \<lparr>\<lpred>q1\<rpred> \<sqinter> \<lpred>q2\<rpred>\<rparr>"
+    by (simp add: conj_to_inter)
+  hence 2: "... \<ge> ((rely (\<lpred>r\<rpred> \<squnion> \<lpred>r1\<rpred>)) \<iinter> (guar (\<lpred>r\<rpred> \<squnion> \<lpred>r2\<rpred>)) \<iinter> \<lparr>\<lpred>q1\<rpred>\<rparr>)
+         \<parallel> ((rely (\<lpred>r\<rpred> \<squnion> \<lpred>r2\<rpred>)) \<iinter> (guar (\<lpred>r\<rpred> \<squnion> \<lpred>r1\<rpred>)) \<iinter> \<lparr>\<lpred>q2\<rpred>\<rparr>)" (is "_\<ge>?rhs")
+    using local.conj_commute spec_introduce_par by presburger
+  hence 3: "?rhs = ((rely \<lpred>(r |\<or>| r1)\<rpred>) \<iinter> (guar \<lpred>r |\<or>| r2\<rpred>) \<iinter> \<lparr>\<lpred>q1\<rpred>\<rparr>) \<parallel> ((rely \<lpred>(r |\<or>| r2)\<rpred>) \<iinter> (guar \<lpred>r |\<or>| r1\<rpred>) \<iinter> \<lparr>\<lpred>q2\<rpred>\<rparr>)"
+    by (simp add: or_to_union)
+  hence 4: "... \<ge> ((rely \<lpred>(r |\<or>| r1)\<rpred>) \<iinter> (guar \<lpred>r2\<rpred>) \<iinter> \<lparr>\<lpred>q1\<rpred>\<rparr>) \<parallel> ((rely \<lpred>(r |\<or>| r2)\<rpred>) \<iinter> (guar \<lpred>r1\<rpred>) \<iinter> \<lparr>\<lpred>q2\<rpred>\<rparr>)"
+  by (smt (verit, ccfv_SIG) Int_subset_iff Un_Int_eq(2) or_to_union guar_rely_refine_guar_pgm monotonicity(2) monotonicity(3) order.refl)
+  thus "?thesis"
+    using "1" "2" "3" by auto
 qed
 
 lemma introduce_multi_para:
   assumes "finite A"
   assumes "A \<noteq> {}"
-  shows "(rely \<lpred>r\<rpred>) \<iinter> \<lparr>\<lpred>|\<And>|A\<rpred>\<rparr> \<ge> (\<parallel>\<parallel>\<in>A. (\<lambda>q. (guar \<lpred>r1\<rpred>) \<iinter> (rely \<lpred>(r |\<or>| r1)\<rpred>) \<iinter> \<lparr>\<lpred>q\<rpred>\<rparr>))" 
-  sorry
+  shows "(rely \<lpred>r\<rpred>) \<iinter> \<lparr>\<lpred>|\<And>|A\<rpred>\<rparr> \<ge> (\<parallel>\<parallel>\<in>A. (\<lambda>q. (guar \<lpred>r\<rpred>) \<iinter> (rely \<lpred>r\<rpred>) \<iinter> \<lparr>\<lpred>q\<rpred>\<rparr>))" 
+proof - 
+  have "(rely \<lpred>r\<rpred>) \<iinter> \<lparr>\<lpred>|\<And>|A\<rpred>\<rparr> = (rely \<lpred>r\<rpred>) \<iinter> \<lparr>\<Sqinter>q\<in>A. \<lpred>q\<rpred>\<rparr>"
+    by (simp add: conj_to_inter_big)
+  thus "?thesis"
+    by (metis assms(1) assms(2) spec_introduce_par_big)
+qed
 
 lemma trading:
   shows "(rely \<lpred>r\<rpred>) \<iinter> (guar \<lpred>g\<rpred>) \<iinter> \<lparr>\<lpred>q\<rpred>\<rparr> = (rely \<lpred>r\<rpred>) \<iinter> (guar \<lpred>g\<rpred>) \<iinter> \<lparr>\<lpred>(r |\<or>| g)\<rpred>\<^sup>* \<inter> \<lpred>q\<rpred>\<rparr>"
-  sorry
-
-definition pstable :: "('state \<Rightarrow> bool) \<Rightarrow> (('state*'state) \<Rightarrow> bool) \<Rightarrow> bool"
-  where "pstable p r \<equiv> \<forall> s. r s \<longrightarrow> (p (fst s) \<longrightarrow> p (snd s))"
-
-definition qtolerates :: "('state \<Rightarrow> bool) \<Rightarrow> (('state*'state) \<Rightarrow> bool) \<Rightarrow> (('state*'state) \<Rightarrow> bool) \<Rightarrow> bool" 
-  where "qtolerates p q r
-     \<equiv> (pstable p r)
-     \<and> (\<forall>s. (p (fst s) \<and> (r \<Zcomp> q) s) \<longrightarrow> q s)
-     \<and> (\<forall>s. (p (fst s) \<and> (q \<Zcomp> r) s) \<longrightarrow> q s)"
-
-definition const_exp :: "('state, 'v) expr \<Rightarrow> (('state*'state) \<Rightarrow> bool) \<Rightarrow> bool"
-  where "const_exp e r \<equiv> \<forall> (s, s')\<in>\<lpred>r\<rpred>. eval e s = eval e s'"
-
-fun sin_ref_exp :: "('state,'v) expr \<Rightarrow> (('state*'state) \<Rightarrow> bool) \<Rightarrow> bool" where
-  "sin_ref_exp (Constant k) r = True" | 
-  "sin_ref_exp (Variable accessor) r = True" | 
-  "sin_ref_exp (UnaryOp oper e1) r = (sin_ref_exp e1 r)" |
-  "sin_ref_exp (BinaryOp oper e1 e2) r = 
-      ((sin_ref_exp e1 r) \<and> (sin_ref_exp e2 r) \<and> 
-      ((const_exp e1 r) \<or> (const_exp e2 r)))"
-
-definition atomic_exp :: "('b \<Rightarrow> bool) \<Rightarrow> ('b*'b \<Rightarrow> bool) \<Rightarrow> 'a" ("\<langle>_,_\<rangle>" [30, 30])
-  where "atomic_exp p q \<equiv> opt (\<lrel>p\<rrel> \<triangleleft> \<lpred>q\<rpred>)"
+  by (metis or_to_union spec_trading)
 
 lemma intro_atomic:
-  assumes "pstable p r \<and> refl \<lpred>g\<rpred> \<and> qtolerates p q r"
-  shows "(guar \<lpred>g\<rpred>) \<iinter> (rely \<lpred>r\<rpred>) \<iinter> \<lbrace>\<lrel>p\<rrel>\<rbrace>;\<lparr>\<lpred>q\<rpred>\<rparr> \<ge> (rely \<lpred>r\<rpred>) \<iinter> \<langle>p, (g |\<and>| q)\<rangle>"
-  sorry
+  assumes stable: "stable \<lrel>p\<rrel> \<lpred>r\<rpred>"
+  assumes refl: "refl \<lpred>g\<rpred>"
+  assumes tolerates: "tolerates_interference \<lrel>p\<rrel> \<lpred>q\<rpred> \<lpred>r\<rpred>"
+  shows "(guar \<lpred>g\<rpred>) \<iinter> (rely \<lpred>r\<rpred>) \<iinter> \<lbrace>\<lrel>p\<rrel>\<rbrace>;\<lparr>\<lpred>q\<rpred>\<rparr> \<ge> (rely \<lpred>r\<rpred>) \<iinter> \<langle>\<lrel>p\<rrel>,\<lpred>g |\<and>| q\<rpred>\<rangle>"
+  by (metis atomic_spec_introduce conj_to_inter_round local.conj_commute local.refl tolerates)
+
+text \<open>After here we will benefit from the RG_Hoare syntax\<close>
+
+(*
+fun change_com :: "'a com \<Rightarrow> 'a" where
+  "change_com (Basic c) = c s" |
+  "change_com (Seq c d) = (change_com c) ; (change_com d)" |
+  "change_com (Cond b c d) = if_statement b (change_com c) (change_com d)" |
+  "change_com (While b c) = while_statement b (change_com c)" |
+  "change_com (Await b c) = idle"
+*)
+
+definition assign_hoare :: "'k \<Rightarrow> ('b, 'v) expr \<Rightarrow> 'a" (infix ":=" 93)
+  where "(y := e) \<equiv> \<Squnion>k. (\<lbrakk>e\<rbrakk>k ; opt(\<lpred>id\<^sub>x\<rpred> \<triangleright> \<llangle>\<acute>(_update_name x (\<lambda>_. a))\<rrangle>) ; idle)"
 
 lemma local_ass:
-  assumes "sin_ref_exp e r"
-  assumes "const_exp e r"
-  assumes "pstable p r"
-  assumes "qtolerates p q r"
-  assumes "refl \<lpred>g\<rpred>"
-  assumes "\<forall>s. (p (fst s) \<and> id\<^sub>x s) \<longrightarrow> (g |\<and>| q) (fst s, set_var x (eval e (fst s)) (snd s))"
-  shows "(rely \<lpred>r\<rpred> ) \<iinter> (guar \<lpred>g\<rpred>) \<iinter> \<lbrace>\<lrel>p\<rrel>\<rbrace>;x:\<^sub>f\<lparr>\<lpred>q\<rpred>\<rparr> \<ge> x ::= e"
-  sorry
+  assumes single_reference_e: "single_reference e \<lpred>r\<rpred>"
+  assumes estable_e: "estable e \<lpred>r\<rpred>"
+  assumes stable: "stable \<lrel>p\<rrel> \<lpred>r\<rpred>"
+  assumes tolerates_q: "tolerates_interference \<lrel>p\<rrel> \<lpred>q\<rpred> \<lpred>r\<rpred>"
+  assumes refl_g: "refl \<lpred>g\<rpred>"
+  assumes "\<forall>s. (p (fst s) \<and> id\<^sub>x s) \<longrightarrow> (g |\<and>| q |\<and>| \<guillemotleft>\<ordfeminine>x = eval e\<guillemotright>) s"
+  shows "(rely \<lpred>r\<rpred>) \<iinter> (guar \<lpred>g\<rpred>) \<iinter> \<lbrace>\<lrel>p\<rrel>\<rbrace>;\<lparr>\<lpred>q\<rpred>\<rparr> \<ge> \<acute>x := e"
+  by sledgehammer
 
 lemma post_ass:
-  assumes "sin_ref_exp e r"
-  assumes "const esp e r"
-  assumes "pstable p0 r"
-  assumes "pstable p1 r"
-  assumes "qtolerates p q r"
-  assumes "refl \<lpred>g\<rpred>"
+  assumes "single_reference e \<lpred>r\<rpred>"
+  assumes "estable e \<lpred>r\<rpred>"
+  assumes "stable \<lrel>p0\<rrel> \<lpred>r\<rpred>"
+  assumes "stable \<lrel>p1\<rrel> \<lpred>r\<rpred>"
+  assumes "tolerates_interference \<lrel>p\<rrel> \<lpred>q\<rpred> \<lpred>r\<rpred>"
+  assumes stable: "stable \<lrel>p\<rrel> \<lpred>r\<rpred>"
+  assumes tolerates_q: "tolerates_interference \<lrel>p\<rrel> \<lpred>q\<rpred> \<lpred>r\<rpred>"
+  assumes refl_g: "refl \<lpred>g\<rpred>"
+  assumes "\<forall>s. (p (fst s) \<and> id\<^sub>x s) \<longrightarrow> (g |\<and>| q) (fst s, set_var x (eval e (fst s)) (snd s))"
+  shows "(rely \<lpred>r\<rpred> ) \<iinter> (guar \<lpred>g\<rpred>) \<iinter> \<lbrace>\<lrel>p\<rrel>\<rbrace>;x:\<^sub>f\<lparr>\<lpred>q\<rpred>\<rparr> \<ge> x ::= e"
+  by sledgehammer
+
+lemma post_ass:"refl \<lpred>g\<rpred>"
   assumes "\<forall>s. (p1 (fst s) \<and> id\<^sub>x s) \<longrightarrow> g (fst s, set_var x (eval e (fst s)) (snd s))"
   shows "(rely \<lpred>r\<rpred>) \<iinter> (guar \<lpred>g\<rpred>) \<iinter> \<lbrace>\<lrel>p0\<rrel>\<rbrace>;x:\<^sub>f\<lparr>\<lpred>q\<rpred>\<rparr> \<ge> ((rely \<lpred>r\<rpred>) \<iinter> (guar \<lpred>g\<rpred>) \<iinter> \<lbrace>\<lrel>p0\<rrel>\<rbrace>;\<lparr>\<lpred>(\<lambda>(s, s').q (s, set_var x (eval e s') s') \<and> p1 s')\<rpred>\<rparr>);(x ::= e)"
-  sorry
+  by sledgehammer
 
 lemma rely_ass:
   fixes gte :: "'d \<Rightarrow> 'd \<Rightarrow> bool" (infix "\<succeq>" 50)
-  assumes "pstable p r"
-  assumes "const_exp (Constant x) r"
-  assumes "sin_ref_exp e r"
+  assumes "stable \<lrel>p\<rrel> \<lpred>r\<rpred>"
+  assumes "estable (Constant x) \<lpred>r\<rpred>"
+  assumes "single_reference e \<lpred>r\<rpred>"
   assumes "refl \<lpred>case_prod gte\<rpred> \<and> trans \<lpred>case_prod gte\<rpred>"
   assumes "\<forall>s. ((id\<^sub>x s \<or> r s) \<longrightarrow> ((eval e (fst s)) \<succeq> (eval e (snd s)))) \<and> (((p (fst s) \<and> id\<^sub>x s)) \<longrightarrow> g (fst s, set_var x (eval e (fst s)) (snd s)))"
   shows "(rely \<lpred>r\<rpred>) \<iinter> (guar \<lpred>g\<rpred>) \<iinter> \<lbrace>\<lrel>p\<rrel>\<rbrace>;x:\<^sub>f\<lparr>\<lpred>(\<lambda>(\<sigma>, \<sigma>'). eval e \<sigma> \<succeq> get_var x \<sigma>' \<and> get_var x \<sigma>' \<succeq> eval e \<sigma>')\<rpred>\<rparr> \<ge> (x ::= e) "
-  sorry
+  by sledgehammer
 
 lemma intro_var:
-  assumes "pstable p r"
-  assumes "qtolerates p q r"
+  assumes "stable \<lrel>p\<rrel> \<lpred>r\<rpred>"
+  assumes "tolerates_interference \<lrel>p\<rrel> \<lpred>q\<rpred> \<lpred>r\<rpred>"
   shows "(rely \<lpred>r\<rpred>) \<iinter> (guar \<lpred>(\<lambda>(s, s'). get_var x s' = get_var x s \<and> (\<exists>s. g s))\<rpred>) \<iinter> \<lbrace>\<lrel>p\<rrel>\<rbrace>;Y:\<^sub>s\<lparr>\<lpred>(\<lambda>s. \<exists>s. q s)\<rpred>\<rparr> \<ge> 
          (rely \<lpred>(\<lambda>(s, s'). get_var x s' = get_var x s \<and> (\<exists>s. r s))\<rpred>) \<iinter> (guar \<lpred>g\<rpred>) \<iinter> \<lbrace>\<lrel>(\<lambda>s. \<exists>s. p s)\<rrel>\<rbrace>;({|x|} |\<union>| Y):\<^sub>s\<lparr>\<lpred>q\<rpred>\<rparr>" 
   sorry (*this one is written wrong with the \<exists>*)
