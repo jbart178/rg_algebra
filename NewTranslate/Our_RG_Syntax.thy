@@ -53,6 +53,25 @@ translations
   "\<langle>c\<rangle>" \<rightleftharpoons> "AWAIT CONST True THEN c END"
   "WAIT b END" \<rightleftharpoons> "AWAIT b THEN SKIP END"
 
+
+nonterminal prgs
+
+syntax
+  "_PAR"        :: "prgs \<Rightarrow> 'a"              ("COBEGIN//_//COEND" 60)
+  "_prg"        :: "'a \<Rightarrow> prgs"              ("_" 57)
+  "_prgs"       :: "['a, prgs] \<Rightarrow> prgs"      ("_//\<parallel>//_" [60,57] 57)
+
+translations
+  "_prg a" \<rightharpoonup> "[a]"
+  "_prgs a ps" \<rightharpoonup> "a # ps"
+  "_PAR ps" \<rightharpoonup> "ps"
+
+syntax
+  "_prg_scheme" :: "['a, 'a, 'a, 'a] \<Rightarrow> prgs"  ("SCHEME [_ \<le> _ < _] _" [0,0,0,60] 57)
+
+translations
+  "_prg_scheme j i k c" \<rightleftharpoons> "(CONST map (\<lambda>i. c) [j..<k])"
+
 print_translation \<open>
   let
     fun quote_tr' f (t :: ts) =
