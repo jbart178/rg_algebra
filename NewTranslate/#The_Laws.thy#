@@ -170,7 +170,7 @@ lemma local_ass:
   assumes refl_g: "refl \<lpred>g\<rpred>"
   assumes "\<forall>k :: Value. (\<lrel>p\<rrel> \<inter> expr_eq e k) \<triangleleft> \<lpred>id\<^sub>x\<rpred> \<subseteq> \<lpred>g\<rpred> \<inter> \<lpred>q\<rpred> \<inter> \<llangle>\<ordfeminine>x = k\<rrangle>"
   shows "(rely \<lpred>r\<rpred>) \<iinter> (guar \<lpred>g\<rpred>) \<iinter> \<lbrace>\<lrel>p\<rrel>\<rbrace>;\<lparr>\<lpred>q\<rpred>\<rparr> \<ge> \<acute>x := e"
-  by sledgehammerSA
+  by sledgehammer
 
 lemma post_ass:
   assumes "single_reference e \<lpred>r\<rpred>"

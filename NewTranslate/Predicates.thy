@@ -3,35 +3,8 @@ theory Predicates
     "../General/Relations"
     "../Programming/State_Relations"
     "../Programming/Expressions"
+    "Our_RG_Syntax"
 begin
-
-text \<open>Quote Antiquote code syntax is introduced from Quote_Antiquote theory with notation edit\<close>
-syntax
-  "_quote"     :: "'b \<Rightarrow> ('a \<Rightarrow> 'b)"                ("(\<guillemotleft>_\<guillemotright>)" [0] 1000)
-  "_antiquote" :: "('a \<Rightarrow> 'b) \<Rightarrow> 'b"                ("\<Zprime>_" [1000] 1000)
-  "_Assert"    :: "'a \<Rightarrow> 'a set"                    ("(\<llangle>_\<rrangle>)" [0] 1000)
-
-translations
-  "\<llangle>b\<rrangle>" \<rightharpoonup> "CONST Collect \<guillemotleft>b\<guillemotright>"
-
-parse_translation \<open>
-  let
-    fun quote_tr [t] = Syntax_Trans.quote_tr \<^syntax_const>\<open>_antiquote\<close> t
-      | quote_tr ts = raise TERM ("quote_tr", ts);
-  in [(\<^syntax_const>\<open>_quote\<close>, K quote_tr)] end
-\<close>
-
-(*
-text \<open>More code from RG_Syntax\<close>
-syntax
-  "_before" :: "id \<Rightarrow> 'a" ("\<ordmasculine>_")
-  "_after"  :: "id \<Rightarrow> 'a" ("\<ordfeminine>_")
-
-translations
-  "\<ordmasculine>x" \<rightleftharpoons> "x \<Zprime>CONST fst"
-  "\<ordfeminine>x" \<rightleftharpoons> "x \<Zprime>CONST snd"
-value "Id_on"
-*)
 
 text \<open>We use (\<lpred>p\<rpred>) to give a relation where (\<sigma>,\<sigma>') satisfy predicate p\<close>
 

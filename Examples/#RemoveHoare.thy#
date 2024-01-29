@@ -1,0 +1,26 @@
+section \<open>Removing an element from a set\<close>
+
+theory RemoveHoare imports 
+  "../NewTranslate/The_Laws"
+
+begin
+
+record vars = 
+  w :: "nat set" 
+  i :: "nat"
+  pw :: "nat set"
+  nw :: "nat set"
+
+context laws begin
+lemma seq_mono_rightx: 
+  assumes "c \<ge> c1 ; c2"
+  assumes "c2 \<ge> d1 ; d2"
+  shows "c \<ge> c1 ; d1 ; d2"
+  by (metis assms(1) assms(2) seq_assoc dual_order.trans seq_mono_right)
+
+lemma Example16_17:
+  "\<lbrace>UNIV\<rbrace> ; \<lparr>\<llangle>\<ordfeminine>i = \<ordmasculine>i \<and> \<ordfeminine>w \<subset> \<ordmasculine>w \<or> \<ordfeminine>i \<notin> \<ordfeminine>w\<rrangle>\<rparr> \<ge> \<lbrace>UNIV\<rbrace> ; \<lparr>\<llangle>\<ordfeminine>i = \<ordmasculine>i \<and> \<ordfeminine>pw \<subseteq> \<ordmasculine>w\<rrangle> \<triangleright> \<llangle>\<Zprime>w \<subseteq> \<Zprime>pw\<rrangle>\<rparr> ; \<lbrace>\<llangle>\<Zprime>w \<subseteq> \<Zprime>pw\<rrangle>\<rbrace> ; \<lparr>\<llangle>\<ordfeminine>i = \<ordmasculine>i \<and> \<ordfeminine>pw = \<ordmasculine>pw\<rrangle> \<triangleright> \<llangle>\<Zprime>w \<subseteq> \<Zprime>pw \<and> \<Zprime>nw = (\<Zprime>pw - {x. x \<noteq> \<Zprime>i})\<rrangle>\<rparr> ; \<lbrace>\<llangle>\<Zprime>w \<subseteq> \<Zprime>pw \<and> \<Zprime>nw = (\<Zprime>pw - {x. x \<noteq> \<Zprime>i})\<rrangle>\<rbrace> ; \<lparr>\<llangle>\<ordfeminine>i = \<ordmasculine>i \<and> \<ordfeminine>pw \<subset> \<ordmasculine>pw \<or> \<ordfeminine>i \<notin> \<ordfeminine>pw\<rrangle>\<rparr>"
+  by sledgehammer
+
+end
+end

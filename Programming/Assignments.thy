@@ -3,8 +3,11 @@ theory Assignments
 imports
   State_Relations
   Expressions
+  "HOL-Hoare_Parallel.RG_Com"
 begin (*declare [[show_types]]*)
-                                      
+
+
+
 locale assignments = expressions + state_relations + 
   (* for lib_last :: "'k \<Rightarrow> 'a::refinement_lattice \<Rightarrow> 'a" ("L\<^sup>C\<^sub>_ _" [999, 999] 999) + *)
   constrains set_var :: "'k \<Rightarrow> 'v \<Rightarrow> 'b \<Rightarrow> 'b"
